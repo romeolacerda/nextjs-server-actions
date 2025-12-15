@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server"
 
-const isSignedIn = false
+const isSignedIn = true
 
 export function middleware(req: NextRequest) {
     if (req.nextUrl.pathname === '/contacts/create' && !isSignedIn) {
@@ -12,6 +12,6 @@ export function middleware(req: NextRequest) {
     return NextResponse.next()
 }
 
-export const config = {
-    matcher: '/contacts/create'
-}
+// export const config = {
+//     matcher: '/contacts/create'
+// }
