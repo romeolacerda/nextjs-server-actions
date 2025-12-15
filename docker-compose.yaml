@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16.8-alpine3.20
+    container_name: live034
+    environment:
+      POSTGRES_USER: 'root'
+      POSTGRES_PASSWORD: 'root'
+      POSTGRES_DB: 'live034'
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+volumes:
+  postgres_data:
