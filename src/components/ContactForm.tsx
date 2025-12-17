@@ -1,57 +1,65 @@
 'use client'
 
-import { FormEvent, useState } from 'react';
+import { ActionResponse } from '@/types/ActionResponse';
+import { Loader2Icon } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useActionState } from 'react';
+import { ZodIssue } from 'zod';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Label } from './ui/label';
-import { Loader2Icon } from 'lucide-react';
 
 interface IContactFormProps {
   contact?: {
     name: string;
     email: string;
   };
-  submitAction?: (formData: {
-    name: string;
-    email: string;
-  }) => Promise<any>;
+  submitAction: (formData: FormData) => Promise<ActionResponse>;
 }
 
 export function ContactForm({ contact, submitAction }: IContactFormProps) {
-  const [name, setName] = useState(contact?.name ?? '');
-  const [email, setEmail] = useState(contact?.email ?? '');
-  const [isLoading, setIsLoading] = useState(false)
+  const router = useRouter()
 
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault()
+  const [state, clientSubmitAction, isPending] = useActionState(
+    async (_previoutData: any, formData: FormData) => {
+      const response = await submitAction(formData)
 
-    setIsLoading(true)
-    await submitAction?.({ name, email })
-    setIsLoading(false)
-  }
+      if (response.status === 'error') {
+        alert(response.body.message.map((issue: ZodIssue) => issue.message).join('/'))
+      }
+
+      if (response.status === 'success') {
+        router.push(`/contacts/${response.body.contact.id}/edit`)
+      }
+
+      return response
+    },
+    null,
+  );
 
   return (
-    <form className="space-y-4" onSubmit={handleSubmit}>
+    // an action trigger a : transition -> state update not urgent
+    <form className="space-y-4" action={clientSubmitAction}>
+      {state?.body.message && state.body.message.map((issue: ZodIssue) => issue.message).join('/')}
+      
       <div className="space-y-1.5">
         <Label>Nome</Label>
         <Input
-          value={name}
+          defaultValue={contact?.name}
           name="name"
-          onChange={event => setName(event.target.value)}
         />
       </div>
 
       <div className="space-y-1.5">
         <Label>E-mail</Label>
         <Input
-          value={email}
+          defaultValue={contact?.email}
           name="email"
-          onChange={event => setEmail(event.target.value)}
         />
       </div>
 
-      <Button type="submit" disabled={isLoading}>
-        {isLoading && <Loader2Icon className='size-4 mr-1 animate-spin'/>}
+      <Button type="submit" disabled={isPending}>
+        {isPending && <Loader2Icon className='size-4 mr-1 animate-spin' />}
         {contact ? 'Salvar' : 'Criar'}
       </Button>
     </form>

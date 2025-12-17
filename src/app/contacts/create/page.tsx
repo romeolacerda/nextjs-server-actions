@@ -1,15 +1,47 @@
 import { ContactForm } from '@/components/ContactForm';
 import { db } from '@/lib/db';
 import { sleep } from '@/lib/utils';
+import { ActionResponse } from '@/types/ActionResponse';
 import { ArrowLeftIcon } from 'lucide-react';
 import Link from 'next/link';
+import { z } from 'zod'
+
+const schema = z.object({
+  name: z.string().min(1, "Nome obrigatiorio"),
+  email: z.string().email("Email obrigatiorio"),
+})
 
 export default function CreateContactPage() {
-  async function submitAction(data: { name: string; email: string }) {
+  async function submitAction(formData: FormData): Promise<ActionResponse> {
     'use server'
 
+    const data = Object.fromEntries(formData)
+    const parsedData = schema.safeParse(data)
+
+    if (!parsedData.success) {
+      return {
+        status: 'error',
+        body: {
+          message: parsedData.error.issues
+        }
+      }
+    }
+
+    const { email, name } = parsedData.data
+
     await sleep()
-    await db.contact.create({ data })
+    // we need to destruct because the formdata also sends the action id
+    const contact = await db.contact.create({
+      data: {
+        name,
+        email
+      }
+    })
+
+    return {
+      status: 'success',
+      body: { contact }
+    }
   }
 
   return (
